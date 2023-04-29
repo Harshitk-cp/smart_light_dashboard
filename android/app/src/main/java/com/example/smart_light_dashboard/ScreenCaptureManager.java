@@ -1,12 +1,15 @@
 package main.java.com.example.smart_light_dashboard;
 
 import java.nio.ByteBuffer;
+import java.util.*;
 
 import android.annotation.SuppressLint;
 import android.content.res.Resources;
 import android.graphics.SurfaceTexture;
 import android.graphics.ImageFormat;
 import android.graphics.PixelFormat;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.hardware.display.DisplayManager;
 import android.hardware.HardwareBuffer;
 import android.hardware.display.VirtualDisplay;
@@ -23,13 +26,12 @@ import androidx.annotation.RequiresApi;
 import io.flutter.Log;
 
 public class ScreenCaptureManager {
-
     @SuppressLint("StaticFieldLeak")
-    private static ScreenCaptureManager instance;
+    private static ScreenCaptureManager mInstance;
 
-    private MediaProjection mMediaProjection = null;
+    private volatile MediaProjection mMediaProjection;
 
-    private volatile VirtualDisplay mVirtualDisplay = null;
+    private volatile VirtualDisplay mVirtualDisplay;
 
     private volatile int mCaptureWidth;
 
@@ -37,82 +39,66 @@ public class ScreenCaptureManager {
 
     private volatile ImageReader mImageReader;
 
-    private Handler mHandler = null;
+    private volatile boolean mIsCapturing = false;
 
-    private volatile Surface mSurface = null;
-
-    private boolean isCapturing = false;
+    private volatile int mRGB = 0;
 
     public static ScreenCaptureManager getInstance() {
-        Log.i("CREATEINSTANCE", "Instance Created");
-        if (instance == null) {
+        if (mInstance == null) {
             synchronized (ScreenCaptureManager.class) {
-                if (instance == null) {
-                    instance = new ScreenCaptureManager();
+                if (mInstance == null) {
+                    mInstance = new ScreenCaptureManager();
+                    Log.i("SCM", "instance created");
                 }
             }
         }
-        return instance;
+        return mInstance;
     }
 
     public void setScreenCaptureInfo(MediaProjection mediaProjection, int captureWidth, int captureHeight) {
-        // width = 1080
-        // height = 2252
-        Log.i("SetScreenCaptureInfo", "called");
         mMediaProjection = mediaProjection;
         mCaptureWidth = captureWidth;
         mCaptureHeight = captureHeight;
-        Log.i("SetScreenCaptureInfo",
+        Log.i("SCM",
                 "Width: " + String.valueOf(captureWidth) + " | Height: " + String.valueOf(captureHeight));
-
-        Log.i("SetScreenCaptureInfo", "creating texture");
-        SurfaceTexture texture = new SurfaceTexture(0);
-        texture.setDefaultBufferSize(mCaptureWidth, mCaptureHeight);
-        mSurface = new Surface(texture);
-
-        long flags = HardwareBuffer.USAGE_CPU_READ_OFTEN | HardwareBuffer.USAGE_CPU_WRITE_RARELY;
-        mImageReader = ImageReader.newInstance(captureWidth, captureHeight, PixelFormat.RGBA_8888, 3, flags);
 
         startCapture();
     }
 
     public int getRGB() {
-        Image image = mImageReader.acquireLatestImage();
-        Image.Plane[] planes = image.getPlanes();
-        ByteBuffer buffer = planes[0].getBuffer();
-        int capacity = buffer.capacity();
-        byte[] data = new byte[capacity];
-        buffer.get(data);
-        image.close();
-        int r = 0;
-        int g = 0;
-        int b = 0;
-        for (int i = 0; i < capacity / 4; i++) {
-            int _r = data[i * 4];
-            int _g = data[i * 4 + 1];
-            int _b = data[i * 4 + 2];
-            r = (r + _r) / 2;
-            g = (g + _g) / 2;
-            b = (b + _b) / 2;
-        }
-        int rgb = (r << 16) | (g << 8) | b;
-        Log.i("Capacity: ", String.valueOf(capacity));
-        return rgb;
+        
+        return mRGB;
     }
 
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     public void startCapture() {
-        Log.i("SCREENCAPTURE", "capture started");
+        Log.i("SCM", "capture started");
 
         if (mMediaProjection == null) {
-            Log.e("SCREENCAPTURE", "MediaProjection is null");
+            Log.e("SCM", "MediaProjection is null");
             return;
         }
 
-        if (isCapturing) {
-            Log.i("SCREENCAPTURE", "Screen is already being captured");
+        if (mIsCapturing) {
+            Log.i("SCM", "screen is already being captured");
             return;
         }
+
+        long flags = HardwareBuffer.USAGE_CPU_READ_OFTEN | HardwareBuffer.USAGE_CPU_WRITE_RARELY;
+        mImageReader = ImageReader.newInstance(mCaptureWidth, mCaptureHeight, PixelFormat.RGBA_8888, 2, flags);
+        mImageReader.setOnImageAvailableListener(new ImageReader.OnImageAvailableListener() {
+            public void onImageAvailable(ImageReader reader) {
+                Image image = reader.acquireLatestImage();
+                if (image != null) {
+                    int width = image.getWidth();
+                    int height = image.getHeight();
+                    Bitmap bitmap = Bitmap.createBitmap(image.getWidth(), image.getHeight(), Bitmap.Config.ARGB_8888);
+                    bitmap.copyPixelsFromBuffer(image.getPlanes()[0].getBuffer());
+                    mRGB = getAmbientColor(bitmap);
+                    image.close();
+                }
+            }
+        }, null);
 
         mVirtualDisplay = mMediaProjection.createVirtualDisplay(
                 "ScreenCapture",
@@ -124,25 +110,58 @@ public class ScreenCaptureManager {
                 null,
                 null);
 
-        isCapturing = true;
+        mIsCapturing = true;
     }
 
     @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     public void stopCapture() {
-        if (!isCapturing)
+        if (!mIsCapturing) {
             return;
+        }
 
-        isCapturing = false;
+        mIsCapturing = false;
+
+        if (mMediaProjection != null) {
+            mMediaProjection.stop();
+            mMediaProjection = null;
+        }
 
         if (mVirtualDisplay != null) {
             mVirtualDisplay.release();
             mVirtualDisplay = null;
         }
 
-        if (mSurface != null) {
-            mSurface.release();
-            mSurface = null;
+        if (mImageReader != null) {
+            mImageReader.close();
+            mImageReader = null;
         }
     }
+
+    private int getAmbientColor(Bitmap bitmap) {      
+        int size = 100;
+        int width = mCaptureWidth;
+        int height = mCaptureHeight;
+        int cx = width / 2;
+        int cy = height / 2;
+        int r = 0;
+        int g = 0;
+        int b = 0;
+        for (int i = cx - size; i <= cx + size; i++) {
+            for (int j = cy - size; j <= cy + size; j++) {
+                int color = bitmap.getPixel(i, j);
+                r += (color & 0xff0000) >> 16;
+                g += (color & 0xff00) >> 8;
+                b += color & 0xff;
+            }
+        }
+        int side = size * 2 + 1;
+        int total = side * side;
+        r /= total;
+        g /= total;
+        b /= total;
+        return (r << 16) | (g << 8) | b;
+    }
+
+    
 
 }

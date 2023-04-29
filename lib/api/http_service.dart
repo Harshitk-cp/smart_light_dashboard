@@ -44,7 +44,8 @@ class HttpService {
     ApiResponse apiResponse = ApiResponse();
 
     try {
-      Response res = await get(Uri.parse("$baseUrl/lights"), headers: headers);
+      Response res =
+          await get(Uri.parse("$baseUrl/api/v1/discovery"), headers: headers);
       List<dynamic> rawLights = <dynamic>[];
       List<LightListResponse> lights = <LightListResponse>[];
       switch (res.statusCode) {
@@ -75,7 +76,7 @@ class HttpService {
     ApiResponse apiResponse = ApiResponse();
 
     try {
-      Response res = await post(Uri.parse("$baseUrl/command"),
+      Response res = await post(Uri.parse("$baseUrl/api/v1/command"),
           body: jsonEncode(
               {'id': id, 'method': method, 'bypass': true, 'params': params}),
           headers: headers);

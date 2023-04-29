@@ -1,12 +1,7 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:smart_light_dashboard/models/lights_list_response.dart';
-import 'package:smart_light_dashboard/models/turn_on_off_response.dart';
-
 import '../../api/api_response.dart';
 import '../../api/http_service.dart';
-import '../../utility/utility.dart';
 
 class DeviceSelectionPage extends StatefulWidget {
   const DeviceSelectionPage({super.key});
@@ -19,11 +14,10 @@ class DeviceSelectionPage extends StatefulWidget {
 
 class _DeviceSelectionPageState extends State<DeviceSelectionPage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  late Color color = Colors.white;
-  final HttpService httpService = HttpService();
+  final HttpService _httpService = HttpService();
   late ApiResponse _apiLightsListResponse = ApiResponse();
   late ApiResponse _apiResponseToggle = ApiResponse();
-  bool _toggle = false;
+  late bool _toggle;
 
   @override
   void initState() {
@@ -35,7 +29,7 @@ class _DeviceSelectionPageState extends State<DeviceSelectionPage> {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Scaffold(
-        backgroundColor: Colors.black38,
+        backgroundColor: Colors.black,
         body: Column(
           children: [
             const SizedBox(
@@ -96,6 +90,8 @@ class _DeviceSelectionPageState extends State<DeviceSelectionPage> {
               shrinkWrap: true,
               itemCount: snapshot.data!.length,
               itemBuilder: (context, index) {
+                _toggle = snapshot.data?[0].power as bool;
+
                 return InkWell(
                   onTap: () {
                     Navigator.pushNamed(
@@ -104,53 +100,54 @@ class _DeviceSelectionPageState extends State<DeviceSelectionPage> {
                     );
                   },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 20, horizontal: 10),
-                    margin: const EdgeInsets.symmetric(
-                        vertical: 10, horizontal: 20),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade900,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      children: [
-                        Row(
-                          children: [
-                            Text(
-                              '${snapshot.data?[index].id}',
-                              style: const TextStyle(
-                                  fontSize: 15, color: Colors.white),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 20, horizontal: 10),
+                      margin: const EdgeInsets.symmetric(
+                          vertical: 10, horizontal: 20),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade900,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Stack(
+                        alignment: Alignment.centerRight,
+                        children: [
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '${snapshot.data?[index].name ?? "Yeelight LED Strip"}',
+                                  style: const TextStyle(
+                                      fontSize: 15, color: Colors.white),
+                                ),
+                                const SizedBox(
+                                  height: 10,
+                                ),
+                                Text('${snapshot.data![index].model}',
+                                    style: const TextStyle(
+                                        fontSize: 12, color: Colors.white)),
+                              ],
                             ),
-                          ],
-                        ),
-                        const SizedBox(
-                          height: 10,
-                        ),
-                        Row(
-                          children: [
-                            Text('${snapshot.data![index].model}',
-                                style: const TextStyle(
-                                    fontSize: 12, color: Colors.white)),
-                            InkWell(
-                              onTap: () {
-                                setState(() {
-                                  _toggleFun();
-                                  _toggle = !_toggle;
-                                });
-                              },
-                              child: _toggle
-                                  ? const Icon(
-                                      Icons.tungsten,
-                                      color: Colors.white,
-                                    )
-                                  : const Icon(Icons.tungsten_outlined,
-                                      color: Colors.white),
-                            )
-                          ],
-                        )
-                      ],
-                    ),
-                  ),
+                          ),
+                          InkWell(
+                            onTap: () {
+                              setState(() {
+                                _toggleFun();
+                                _toggle = !_toggle;
+                              });
+                            },
+                            child: _toggle
+                                ? const Icon(
+                                    Icons.tungsten,
+                                    size: 40,
+                                    color: Colors.white,
+                                  )
+                                : const Icon(Icons.tungsten_outlined,
+                                    size: 40, color: Colors.white),
+                          )
+                        ],
+                      )),
                 );
               },
             );
@@ -164,14 +161,14 @@ class _DeviceSelectionPageState extends State<DeviceSelectionPage> {
   }
 
   Future<List<LightListResponse>> _getLightsList() async {
-    _apiLightsListResponse = await httpService.getLightsList();
+    _apiLightsListResponse = await _httpService.getLightsList();
     final List<LightListResponse> lightsListResponse =
         _apiLightsListResponse.Data as List<LightListResponse>;
     return lightsListResponse;
   }
 
   void _toggleFun() async {
-    _apiResponseToggle = await httpService.commands(99458501, 'toggle', []);
+    _apiResponseToggle = await _httpService.commands(99458501, 'toggle', []);
 
     if ((_apiResponseToggle.Data) != null) {
       // Navigator.of(context, rootNavigator: true).pop();

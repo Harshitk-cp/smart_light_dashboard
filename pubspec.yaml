@@ -44,6 +44,8 @@ dependencies:
   permission_handler: 8.1.2
   shared_preferences: 2.0.9
   zego_express_engine: 2.23.0
+  mockito: ^5.4.0
+  flutter_hsvcolor_picker: ^1.2.3
 
 dev_dependencies:
   flutter_test:

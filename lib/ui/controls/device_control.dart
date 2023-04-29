@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:smart_light_dashboard/ui/controls/color_screen.dart';
-import 'package:smart_light_dashboard/ui/controls/white_screen.dart';
+import 'package:smart_light_dashboard/ui/controls/ambient_mode.dart';
 
 import '../../api/api_response.dart';
 import '../../api/http_service.dart';
@@ -103,7 +103,7 @@ class _DeviceControlPageState extends State<DeviceControlPage> {
                         child: const Center(
                             child: Padding(
                           padding: EdgeInsets.all(10.0),
-                          child: Text("White",
+                          child: Text("Colour",
                               style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white)),
@@ -134,7 +134,7 @@ class _DeviceControlPageState extends State<DeviceControlPage> {
                             child: Padding(
                           padding: EdgeInsets.all(10.0),
                           child: Text(
-                            "Colour",
+                            "Ambient Mode",
                             style: TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.bold,
@@ -147,7 +147,8 @@ class _DeviceControlPageState extends State<DeviceControlPage> {
             ),
             Expanded(
               child: PageView(
-                allowImplicitScrolling: true,
+                physics: NeverScrollableScrollPhysics(),
+                allowImplicitScrolling: false,
                 scrollDirection: Axis.horizontal,
                 controller: _controller,
                 onPageChanged: (num) {
@@ -159,10 +160,10 @@ class _DeviceControlPageState extends State<DeviceControlPage> {
                 },
                 children: const [
                   Center(
-                    child: WhiteScreen(),
+                    child: ColorScreen(),
                   ),
                   Center(
-                    child: ColorScreen(),
+                    child: AmbientMode(),
                   )
                 ],
               ),

@@ -3,5 +3,5 @@ class SharedPreferencesConstants {
 }
 
 class ApiConstants {
-  static const String BASE_URL = "http://192.168.1.7:3000";
+  static const String BASE_URL = "http://192.168.229.77:3000";
 }

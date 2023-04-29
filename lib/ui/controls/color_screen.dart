@@ -1,4 +1,4 @@
-import 'package:flex_color_picker/flex_color_picker.dart';
+import "package:flutter_hsvcolor_picker/flutter_hsvcolor_picker.dart";
 import 'package:flutter/material.dart';
 
 import '../../api/api_response.dart';
@@ -16,44 +16,49 @@ class ColorScreen extends StatefulWidget {
 class _ColorScreenState extends State<ColorScreen> {
   late ApiResponse _apiResponseBrightness = ApiResponse();
   final HttpService httpService = HttpService();
-  late Color myColor = Colors.white;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: double.infinity,
-      width: double.infinity,
-      child: ColorPicker(
-        color: myColor,
-        enableShadesSelection: false,
-        onColorChanged: (Color color) {
-          setState(() {
-            myColor = color;
+    return SizedBox(
+        width: double.infinity,
+        child: Stack(
+          alignment: Alignment.bottomCenter,
+          children: [
+            Stack(
+              alignment: Alignment.topCenter,
+              children: [
+                ColorPicker(
+                  pickerOrientation: PickerOrientation.inherit,
+                  color: Colors.blue,
+                  onChanged: (value) {
+                    setState(() {
+                      int rgb =
+                          (value.red << 16) | (value.green << 8) | value.blue;
 
-            int rgb = (myColor.red << 16) | (myColor.green << 8) | myColor.blue;
-
-            _setColor(rgb);
-          });
-        },
-        pickersEnabled: const <ColorPickerType, bool>{
-          ColorPickerType.both: false,
-          ColorPickerType.accent: false,
-          ColorPickerType.primary: false,
-          ColorPickerType.custom: true,
-          ColorPickerType.wheel: true,
-        },
-      ),
-    );
+                      _setColor(rgb);
+                    });
+                  },
+                  initialPicker: Picker.paletteValue,
+                ),
+                Container(
+                  width: double.infinity,
+                  height: 100,
+                  color: Colors.black,
+                ),
+              ],
+            ),
+            Container(
+              width: double.infinity,
+              height: 120,
+              color: Colors.black,
+            )
+          ],
+        ));
   }
 
   void _setColor(int rgb) async {
-    int val = rgb;
     _apiResponseBrightness =
-        await httpService.commands(99458501, 'set_rgb', [val, 'smooth', 500]);
+        await httpService.commands(99458501, 'set_rgb', [rgb, 'smooth', 500]);
     print(_apiResponseBrightness.Data);
-
-    if ((_apiResponseBrightness.Data) != null) {
-      // Navigator.of(context, rootNavigator: true).pop();
-    }
   }
 }
