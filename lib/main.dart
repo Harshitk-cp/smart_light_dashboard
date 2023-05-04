@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:smart_light_dashboard/ui/controls/device_control.dart';
+import 'package:flutter/services.dart';
+import 'package:smart_light_dashboard/ui/controls/audio_mode.dart';
+import 'package:smart_light_dashboard/ui/controls/device_control/device_control.dart';
+import 'package:smart_light_dashboard/ui/controls/video_mode.dart';
 
 import 'ui/home/device_selection.dart';
 
 void main() {
   runApp(MyApp());
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    systemNavigationBarColor: Color(0xFF1F2128), // navigation bar color
+    statusBarColor: Color(0xFF1F2128), // status bar color
+  ));
 }
 
 class MyApp extends StatelessWidget {
@@ -19,7 +26,9 @@ class MyApp extends StatelessWidget {
       ),
       routes: {
         '/': (context) => const DeviceSelectionPage(),
-        '/controls': (context) => const DeviceControlPage()
+        '/controls': (context) => const DeviceControlPage(),
+        '/videoModePage': (context) => const VideoModePage(),
+        '/audioModePage': (context) => const AudioModePage()
       },
     );
   }

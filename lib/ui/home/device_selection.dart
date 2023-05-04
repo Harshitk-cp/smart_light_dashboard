@@ -15,13 +15,14 @@ class DeviceSelectionPage extends StatefulWidget {
 class _DeviceSelectionPageState extends State<DeviceSelectionPage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final HttpService _httpService = HttpService();
-  late ApiResponse _apiLightsListResponse = ApiResponse();
   late ApiResponse _apiResponseToggle = ApiResponse();
-  late bool _toggle;
+  late ApiResponse _apiLightsListResponse = ApiResponse();
+  bool _toggle = false;
 
   @override
   void initState() {
     _getLightsList();
+
     super.initState();
   }
 
@@ -29,48 +30,44 @@ class _DeviceSelectionPageState extends State<DeviceSelectionPage> {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Scaffold(
-        backgroundColor: Colors.black,
+        backgroundColor: Color(0xFF1F2128),
         body: Column(
           children: [
-            const SizedBox(
-              height: 10,
-            ),
-            Stack(
-              alignment: Alignment.centerRight,
-              children: [
-                Center(
-                  child: Row(
-                    children: const [
-                      Spacer(),
-                      Text("Devices",
-                          style: TextStyle(fontSize: 25, color: Colors.white)),
-                      Icon(
-                        Icons.keyboard_arrow_down,
+            Container(
+              height: 60,
+              child: Stack(
+                alignment: Alignment.centerRight,
+                children: [
+                  Center(
+                    child: Row(
+                      children: const [
+                        Spacer(),
+                        Text("Devices",
+                            style: TextStyle(
+                                fontSize: 24, color: Color(0xFFf9f9f9))),
+                        Spacer(),
+                      ],
+                    ),
+                  ),
+                  InkWell(
+                    onTap: () {
+                      Navigator.pushNamed(context, '/controls');
+                    },
+                    child: Container(
+                      margin: const EdgeInsets.only(right: 30, left: 20),
+                      child: const Icon(
+                        Icons.refresh_rounded,
                         size: 30,
                         color: Colors.white,
                       ),
-                      Spacer(),
-                    ],
-                  ),
-                ),
-                InkWell(
-                  onTap: () {
-                    Navigator.pushNamed(context, '/controls');
-                  },
-                  child: Container(
-                    margin: const EdgeInsets.only(right: 20, left: 20),
-                    child: const Icon(
-                      Icons.add_circle,
-                      size: 30,
-                      color: Colors.white,
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
             const Divider(
-              color: Colors.grey,
-              thickness: 0.5,
+              color: Color(0xFF262930),
+              thickness: 2,
             ),
             lightsListView(_getLightsList())
           ],
@@ -90,65 +87,78 @@ class _DeviceSelectionPageState extends State<DeviceSelectionPage> {
               shrinkWrap: true,
               itemCount: snapshot.data!.length,
               itemBuilder: (context, index) {
-                _toggle = snapshot.data?[0].power as bool;
-
-                return InkWell(
-                  onTap: () {
-                    Navigator.pushNamed(
-                      context,
-                      '/controls',
-                    );
-                  },
-                  child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 20, horizontal: 10),
-                      margin: const EdgeInsets.symmetric(
-                          vertical: 10, horizontal: 20),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade900,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Stack(
-                        alignment: Alignment.centerRight,
+                return StatefulBuilder(builder: (context, setStateItem) {
+                  return Container(
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 20, horizontal: 20),
+                    margin: const EdgeInsets.symmetric(
+                        vertical: 15, horizontal: 20),
+                    decoration: BoxDecoration(
+                      boxShadow: [
+                        BoxShadow(
+                            color: Colors.black.withOpacity(0.2),
+                            blurRadius: 15.0,
+                            spreadRadius: 0,
+                            offset: Offset(0, 4))
+                      ],
+                      color: Color(0xFF242731),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.pushNamed(
+                          context,
+                          '/controls',
+                        );
+                      },
+                      child: Row(
                         children: [
-                          Align(
-                            alignment: Alignment.centerLeft,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  '${snapshot.data?[index].name ?? "Yeelight LED Strip"}',
-                                  style: const TextStyle(
-                                      fontSize: 15, color: Colors.white),
-                                ),
-                                const SizedBox(
-                                  height: 10,
-                                ),
-                                Text('${snapshot.data![index].model}',
-                                    style: const TextStyle(
-                                        fontSize: 12, color: Colors.white)),
-                              ],
+                          Padding(
+                            padding: const EdgeInsets.only(right: 20),
+                            child: Image.asset(
+                              'assets/device_selection/led_strip_icon.png',
+                              height: 60,
                             ),
                           ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${snapshot.data?[index].name ?? "Yeelight LED Strip"}',
+                                style: const TextStyle(
+                                    fontSize: 20, color: Colors.white),
+                              ),
+                              const SizedBox(
+                                height: 10,
+                              ),
+                              Text('${snapshot.data![index].colorMode}',
+                                  style: const TextStyle(
+                                      fontSize: 15,
+                                      color: Color(0xFF60636E),
+                                      fontWeight: FontWeight.w400)),
+                            ],
+                          ),
+                          Spacer(),
                           InkWell(
-                            onTap: () {
-                              setState(() {
-                                _toggleFun();
-                                _toggle = !_toggle;
-                              });
-                            },
-                            child: _toggle
-                                ? const Icon(
-                                    Icons.tungsten,
-                                    size: 40,
-                                    color: Colors.white,
-                                  )
-                                : const Icon(Icons.tungsten_outlined,
-                                    size: 40, color: Colors.white),
-                          )
+                              onTap: () {
+                                setState(() {
+                                  final res = _toggleFun();
+                                  (res == "Fail")
+                                      ? print("failed")
+                                      : _toggle = !_toggle;
+                                });
+                              },
+                              child: _toggle
+                                  ? toggleWidget(
+                                      Color(0xFF6C5DD3), Color(0xFF8374EE))
+                                  : toggleWidget(
+                                      Color(0xFF2F323B), Color(0xFF3A3E49)))
                         ],
-                      )),
-                );
+                      ),
+                    ),
+                  );
+                  ;
+                });
               },
             );
           } else if (snapshot.hasError) {
@@ -160,6 +170,29 @@ class _DeviceSelectionPageState extends State<DeviceSelectionPage> {
     );
   }
 
+  Widget toggleWidget(Color color, borderColor) {
+    return Container(
+      padding: EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withOpacity(0.3),
+              blurRadius: 15.0,
+              spreadRadius: 0,
+              offset: Offset(0, 4))
+        ],
+        border: Border.all(color: borderColor, width: 3),
+        color: color,
+        borderRadius: BorderRadius.circular(40),
+      ),
+      child: const Icon(
+        Icons.power_settings_new,
+        size: 25,
+        color: Colors.white,
+      ),
+    );
+  }
+
   Future<List<LightListResponse>> _getLightsList() async {
     _apiLightsListResponse = await _httpService.getLightsList();
     final List<LightListResponse> lightsListResponse =
@@ -167,11 +200,15 @@ class _DeviceSelectionPageState extends State<DeviceSelectionPage> {
     return lightsListResponse;
   }
 
-  void _toggleFun() async {
-    _apiResponseToggle = await _httpService.commands(99458501, 'toggle', []);
+  Future<String> _toggleFun() async {
+    _apiResponseToggle =
+        await _httpService.commands(99458501, 'toggle', false, []);
 
     if ((_apiResponseToggle.Data) != null) {
       // Navigator.of(context, rootNavigator: true).pop();
+      return _apiResponseToggle.Data.toString();
+    } else {
+      return "Fail";
     }
   }
 }

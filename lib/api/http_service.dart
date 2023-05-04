@@ -72,13 +72,13 @@ class HttpService {
   }
 
   Future<ApiResponse> commands(
-      int id, String method, List<dynamic> params) async {
+      int id, String method, bool bypass, List<dynamic> params) async {
     ApiResponse apiResponse = ApiResponse();
 
     try {
       Response res = await post(Uri.parse("$baseUrl/api/v1/command"),
           body: jsonEncode(
-              {'id': id, 'method': method, 'bypass': true, 'params': params}),
+              {'id': id, 'method': method, 'bypass': bypass, 'params': params}),
           headers: headers);
 
       switch (res.statusCode) {

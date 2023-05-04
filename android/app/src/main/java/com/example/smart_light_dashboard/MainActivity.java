@@ -17,6 +17,7 @@ import main.java.com.example.smart_light_dashboard.ScreenCaptureManager;
 import im.zego.zego_express_engine.ZegoCustomVideoCaptureManager;
 import android.content.res.Resources;
 import android.graphics.SurfaceTexture;
+import android.content.Context;
 
 public class MainActivity extends FlutterActivity {
     private static final String CHANNEL = "com.example.smart_light_dashboard/get-rgb";
@@ -32,7 +33,14 @@ public class MainActivity extends FlutterActivity {
                             if (call.method.equals("getRGBValue")) {
                                 int rgb = ScreenCaptureManager.getInstance().getRGB();
                                 result.success(rgb);
-                            } else {
+                            } else if(call.method.equals("getAudioOutput")){
+                                double audioFormat = ScreenCaptureManager.getInstance().getAudioOutput();
+                                result.success(audioFormat);
+                            } else if(call.method.equals("stopCapture")){
+                                ScreenCaptureManager.getInstance().stopCapture();
+                                result.success(0);
+                            }
+                            else {
                                 result.notImplemented();
                             }
                         });
@@ -55,8 +63,10 @@ public class MainActivity extends FlutterActivity {
         public void onMediaProjectionCreated(MediaProjection projection, int errorCode) {
             if (errorCode == RequestMediaProjectionPermissionManager.ERROR_CODE_SUCCEED) {
                 Log.i("MEDIA_PROJECTION_CREATOR", "Create media projection succeeded!");
+                Context context = getApplicationContext();
+
                 ScreenCaptureManager.getInstance().setScreenCaptureInfo(projection, getScreenWidth(),
-                        getScreenHeight());
+                        getScreenHeight(), context);
             } else if (errorCode == RequestMediaProjectionPermissionManager.ERROR_CODE_FAILED_USER_CANCELED) {
                 Log.e("MEDIA_PROJECTION_CREATOR", "Create media projection failed because can not get permission");
             } else if (errorCode == RequestMediaProjectionPermissionManager.ERROR_CODE_FAILED_SYSTEM_VERSION_TOO_LOW) {

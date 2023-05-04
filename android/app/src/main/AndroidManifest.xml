@@ -3,18 +3,19 @@
 
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.INTERNET"/>
-
+    
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
 
    <application
         android:label="smart_light_dashboard"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:allowAudioPlaybackCapture="true">
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTop"
             android:theme="@style/LaunchTheme"
-            android:allowAudioPlaybackCapture="true"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize">
@@ -36,5 +37,12 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+
+        
+        <service
+            android:name=".AudioCaptureService"
+            android:foregroundServiceType="mediaProjection" />
+
     </application>
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
 </manifest>

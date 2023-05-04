@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:media_projection_creator/media_projection_creator.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../../api/api_response.dart';
 import '../../api/http_service.dart';
 
@@ -22,15 +23,17 @@ class _AmbientModeState extends State<AmbientMode> {
   late Timer timer;
 
   bool _isStreaming = false;
+  bool _isStreamingAudio = false;
 
   static const platform =
       MethodChannel('com.example.smart_light_dashboard/get-rgb');
 
   @override
   void initState() {
-    timer = Timer.periodic(const Duration(milliseconds: 500), (Timer timer) {
+    timer = Timer.periodic(const Duration(milliseconds: 100), (Timer timer) {
       Timer(const Duration(milliseconds: 50), () {
         _isStreaming ? getRGBValue() : print("Not Streaming!");
+        _isStreamingAudio ? getAudioFormat() : print("Not Capturing Audio!");
       });
     });
     super.initState();
@@ -39,14 +42,20 @@ class _AmbientModeState extends State<AmbientMode> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.black,
+      color: const Color(0xFF1F2128),
       child: Center(
         child: Column(
           children: [
             const SizedBox(height: 100),
-            CupertinoButton.filled(
-              onPressed: launch,
-              child: const Text('Create MediaProjection'),
+            SizedBox(
+              width: 380,
+              child: CupertinoButton(
+                color: const Color(0xFF6C5DD3),
+                onPressed: () {
+                  launch('Video');
+                },
+                child: const Text('Create Video MediaProjection'),
+              ),
             ),
             const SizedBox(height: 10),
             Text(
@@ -54,14 +63,42 @@ class _AmbientModeState extends State<AmbientMode> {
               style: const TextStyle(color: Colors.white),
             ),
             const SizedBox(height: 50),
-            CupertinoButton.filled(
-              onPressed: finish,
-              child: const Text('Destroy MediaProjection'),
+            SizedBox(
+              width: 380,
+              child: CupertinoButton(
+                color: const Color(0xFF6C5DD3),
+                onPressed: finish,
+                child: const Text('Destroy MediaProjection'),
+              ),
+            ),
+            const SizedBox(height: 50),
+            SizedBox(
+              width: 380,
+              child: CupertinoButton(
+                color: const Color(0xFF6C5DD3),
+                onPressed: () {
+                  launch('Audio');
+                },
+                child: const Text('Create Audio MediaProjection'),
+              ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> getPermissions() async {
+    final status = await Permission.microphone.request();
+    if (status == PermissionStatus.granted) {
+      print('Permission granted');
+    } else if (status == PermissionStatus.denied) {
+      print(
+          'Permission denied. Show a dialog and again ask for the permission');
+    } else if (status == PermissionStatus.permanentlyDenied) {
+      print('Take the user to the settings page.');
+      await openAppSettings();
+    }
   }
 
   Future<void> getRGBValue() async {
@@ -79,7 +116,16 @@ class _AmbientModeState extends State<AmbientMode> {
     }
   }
 
-  void launch() async {
+  Future<void> getAudioFormat() async {
+    try {
+      final double result = await platform.invokeMethod('getAudioFormat');
+      print('Audio format received: $result');
+    } on PlatformException catch (e) {
+      print(e.message);
+    }
+  }
+
+  void launch(String media) async {
     int errorCode = await MediaProjectionCreator.createMediaProjection();
 
     setState(() {
@@ -88,7 +134,7 @@ class _AmbientModeState extends State<AmbientMode> {
         case MediaProjectionCreator.ERROR_CODE_SUCCEED:
           _createMediaProjectionResult = 'Succeed';
           setState(() {
-            _isStreaming = true;
+            (media == "Video") ? _isStreaming = true : _isStreamingAudio = true;
           });
           break;
         case MediaProjectionCreator.ERROR_CODE_FAILED_USER_CANCELED:
@@ -104,15 +150,20 @@ class _AmbientModeState extends State<AmbientMode> {
 
   void finish() async {
     await MediaProjectionCreator.destroyMediaProjection();
+    final int result = await platform.invokeMethod("stopCapture");
+    if (result == 0) {
+      print("Capturing Stopped by user");
+    }
     setState(() {
       _createMediaProjectionResult = 'Start Mode';
       _isStreaming = false;
+      _isStreamingAudio = false;
     });
   }
 
   void sendColour(int rgb) async {
-    _apiResponseColour =
-        await _httpService.commands(99458501, 'set_rgb', [rgb, 'smooth', 200]);
+    _apiResponseColour = await _httpService
+        .commands(99458501, 'set_rgb', true, [rgb, 'smooth', 200]);
     print(_apiResponseColour.Data);
 
     if ((_apiResponseColour.Data) != null) {}
