@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -312,7 +313,7 @@ class _AudioModePageState extends State<AudioModePage> {
     try {
       int beat = await platform.invokeMethod('music/color');
       if (beat > 0) color_index = (color_index + 1) % 7;
-      _musicColor = colors[color_index * 3 + (_musicBrightness / 25.1).floor()];
+      _musicColor = colors[color_index * 3 + (min(99, _musicBrightness) / 25).floor()];
       // _musicColor = colors[color_index];
       // int color = await platform.invokeMethod('music/color');
       // _musicColor = color;
@@ -325,7 +326,7 @@ class _AudioModePageState extends State<AudioModePage> {
     try {
       final int brightness = await platform.invokeMethod('music/brightness');
       _musicBrightness = brightness;
-      _musicColor = colors[color_index * 3 + (_musicBrightness / 25.1).floor()];
+      _musicColor = colors[color_index * 3 + (min(99, _musicBrightness) / 25).floor()];
     } on PlatformException catch (e) {
       print(e.message);
     }
