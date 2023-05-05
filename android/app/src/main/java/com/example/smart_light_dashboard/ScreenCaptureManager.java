@@ -71,11 +71,16 @@ public class ScreenCaptureManager {
 
     private volatile int mRGB = 0;
 
-    private volatile double frequency = 0.0;
+    private volatile int mMusicColor = 0;
 
-    private volatile int bufferSizeInBytes = 4096; 
+    private volatile int mMusicBrightness = 1;
+
+    private volatile int bufferSizeInBytes = (int)Math.pow(2, 12); 
 
     private volatile short[] buffer = new short[bufferSizeInBytes];
+
+    private long lastTime = 0;
+    private double lastAmpAvg = 0;
 
     public static ScreenCaptureManager getInstance() {
         if (mInstance == null) {
@@ -104,8 +109,12 @@ public class ScreenCaptureManager {
         return mRGB;
     }
 
-    public double getAudioOutput(){
-        return frequency;
+    public int getMusicColor() {
+        return mMusicColor;
+    }
+
+    public int getMusicBrightness() {
+        return mMusicBrightness;
     }
 
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
@@ -214,36 +223,70 @@ public class ScreenCaptureManager {
     }
 
     public void calculate() {
-        // Log.i("AUDIO RECORD ", "Calculations started");
         double[] magnitude = new double[bufferSizeInBytes / 2];
 
-        //Create Complex array for use in FFT
-        Complex[] fftTempArray = new Complex[bufferSizeInBytes];
+        // create complex array for use in FFT
+        Complex[] tempArray = new Complex[bufferSizeInBytes];
         for (int i = 0; i < bufferSizeInBytes; i++) {
-            fftTempArray[i] = new Complex(buffer[i], 0);
+            tempArray[i] = new Complex(buffer[i], 0);
         }
 
-        //Obtain array of FFT data
-        final Complex[] fftArray = FFT.fft(fftTempArray);
+        // obtain array of FFT data
+        final Complex[] fftArray = FFT.fft(tempArray);
+
         // calculate power spectrum (magnitude) values from fft[]
         for (int i = 0; i < (bufferSizeInBytes / 2) - 1; ++i) {
             double real = fftArray[i].re();
             double imaginary = fftArray[i].im();
             magnitude[i] = Math.sqrt(real * real + imaginary * imaginary);
-
         }
 
-        // find largest peak in power spectrum
-        double mag_total = 0;
-        for (int i = 0; i < magnitude.length; ++i) {
-            double Fs = i * audioFormat.getSampleRate() / bufferSizeInBytes;
-            if (Fs > 400.0) break;
-            mag_total += magnitude[i];
+        int levels = 30;
+        int sampleRate = audioFormat.getSampleRate();
+
+        int maxIndex = (int)(200 * bufferSizeInBytes / sampleRate);
+
+        double mx = 0;
+        for (int i = 1; i < maxIndex; ++i) {
+            mx = Math.max(mx, magnitude[i - 1] + magnitude[i]);
+        }
+        mx /= 2 * 5e5;
+        mMusicBrightness = (int) Math.max(1, Math.min(100, mx * 2));
+
+        double total = 0;
+        for (int i = 0; i < maxIndex; ++i) {
+            total += magnitude[i] / 5e5;
+        }
+        lastAmpAvg = lastAmpAvg * 0.9 + total * 0.1;
+
+        long time = System.currentTimeMillis();
+        if (total > 4 * (maxIndex + 1) && total > lastAmpAvg * 1.5 && time - lastTime > 1.5e3) {
+            mMusicColor = 1;
+            lastTime = time;
+        } else {
+            mMusicColor = 0;
         }
 
-        frequency = (int)(mag_total / 100000000);
-        
-        // Log.i("SCM", "A: " + Integer.toString((int)mag_total / 1000000));
+        int br = (int) (lastAmpAvg * 1.5 / maxIndex);
+        String log = "";
+        for (int i = 0; i < levels; ++i) {
+            for (int j = 0; j < maxIndex; ++j) {
+                if (levels - i == br) log += "-";
+                else log += magnitude[j] / 5e5 > levels - i ? "#" : " ";
+            }
+            log += "\n";
+        }
+        log += "#".repeat((int)mx);
+
+        Log.i("-", "\033[H\033[2J");
+        Log.i("X", log);
+        Log.i("X", Integer.toString(mMusicBrightness));
+    }
+
+    public double getMean(double[] a, int size) {
+        double avg = 0;
+        for (int i = 0; i < size; ++i) avg += a[i];
+        return avg / size;
     }
 
     @RequiresApi(api = Build.VERSION_CODES.KITKAT)

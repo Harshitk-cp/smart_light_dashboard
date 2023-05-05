@@ -33,9 +33,12 @@ public class MainActivity extends FlutterActivity {
                             if (call.method.equals("getRGBValue")) {
                                 int rgb = ScreenCaptureManager.getInstance().getRGB();
                                 result.success(rgb);
-                            } else if(call.method.equals("getAudioOutput")){
-                                double audioFormat = ScreenCaptureManager.getInstance().getAudioOutput();
-                                result.success(audioFormat);
+                            } else if(call.method.equals("music/color")){
+                                int color = ScreenCaptureManager.getInstance().getMusicColor();
+                                result.success(color);
+                            } else if(call.method.equals("music/brightness")){
+                                int brightness = ScreenCaptureManager.getInstance().getMusicBrightness();
+                                result.success(brightness);
                             } else if(call.method.equals("stopCapture")){
                                 ScreenCaptureManager.getInstance().stopCapture();
                                 result.success(0);

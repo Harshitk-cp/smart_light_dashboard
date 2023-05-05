@@ -20,12 +20,24 @@ class _AudioModePageState extends State<AudioModePage> {
   late ApiResponse _apiResponseColour = ApiResponse();
   late ApiResponse _apiResponseToggle = ApiResponse();
   final HttpService _httpService = HttpService();
-  late Timer timer;
+  late Timer timer1;
+  // late Timer timer2;
   bool _isStreaming = false;
   final String _deviceName = "Yeelight LightStrip Plus";
   bool _togglePower = true;
 
-  final List<int> colors = [0xff0000, 0x00ff00, 0x0000ff, 0xffaa00, 0xff00aa];
+  int _musicBrightness = 1;
+  int _musicColor = 0xffffff;
+
+  final List<int> colors = [
+    0xff0000, 0xff3232, 0xff6666, 
+    0xff00e4, 0xff32e9, 0xff66ee, 
+    0x7d00ff, 0x9732ff, 0xb166ff,  
+    0x002cff, 0x3256ff, 0x6680ff,  
+    0x00e0ff, 0x32e6ff, 0x66ecff,  
+    0x36b300, 0x45e600, 0x5fff1a, 
+    0xffc800, 0xffd332, 0xffde66,  
+  ];
   int color_index = 0;
 
   static const platform =
@@ -33,13 +45,20 @@ class _AudioModePageState extends State<AudioModePage> {
 
   @override
   void initState() {
-    timer = Timer.periodic(const Duration(milliseconds: 100), (Timer timer) {
-      Timer(const Duration(milliseconds: 50), () {
-        if (_isStreaming) {
-          _getAudioOutput();
-        }
-      });
+    timer1 = Timer.periodic(const Duration(milliseconds: 100), (Timer timer) {
+      if (_isStreaming) {
+        _getMusicColor();
+        _getMusicBrightness();
+        sendColour(_musicColor);
+        sendBrightness(_musicBrightness);
+      }
     });
+    // timer2 = Timer.periodic(const Duration(milliseconds: 100), (Timer timer) {
+    //   if (_isStreaming) {
+    //     sendColour(_musicColor);
+    //     sendBrightness(_musicBrightness);
+    //   }
+    // });
     super.initState();
   }
 
@@ -289,15 +308,24 @@ class _AudioModePageState extends State<AudioModePage> {
     }
   }
 
-  Future<void> _getAudioOutput() async {
+  Future<void> _getMusicColor() async {
     try {
-      final double result = await platform.invokeMethod('getAudioOutput');
-      if (result > 0.0) {
-        color_index = (color_index + 1) % colors.length;
-        int color = colors[color_index];
-        sendColour(color);
-      }
-      print('Audio format received: $result');
+      int beat = await platform.invokeMethod('music/color');
+      if (beat > 0) color_index = (color_index + 1) % 7;
+      _musicColor = colors[color_index * 3 + (_musicBrightness / 25.1).floor()];
+      // _musicColor = colors[color_index];
+      // int color = await platform.invokeMethod('music/color');
+      // _musicColor = color;
+    } on PlatformException catch (e) {
+      print(e.message);
+    }
+  }
+
+  Future<void> _getMusicBrightness() async {
+    try {
+      final int brightness = await platform.invokeMethod('music/brightness');
+      _musicBrightness = brightness;
+      _musicColor = colors[color_index * 3 + (_musicBrightness / 25.1).floor()];
     } on PlatformException catch (e) {
       print(e.message);
     }
@@ -336,7 +364,15 @@ class _AudioModePageState extends State<AudioModePage> {
 
   void sendColour(int rgb) async {
     _apiResponseColour = await _httpService
-        .commands(99458501, 'set_rgb', true, [rgb, 'smooth', 200]);
+        .commands(99458501, 'set_rgb', true, [rgb, 'smooth', 1000]);
+    // print(_apiResponseColour.Data);
+
+    // if ((_apiResponseColour.Data) != null) {}
+  }
+
+  void sendBrightness(int brightness) async {
+    _apiResponseColour = await _httpService
+        .commands(99458501, 'set_bright', true, [brightness, 'smooth', 100]);
     // print(_apiResponseColour.Data);
 
     // if ((_apiResponseColour.Data) != null) {}
