@@ -109,10 +109,8 @@ class _DeviceSelectionPageState extends State<DeviceSelectionPage> {
                     ),
                     child: InkWell(
                       onTap: () {
-                        Navigator.pushNamed(
-                          context,
-                          '/controls',
-                        );
+                        Navigator.pushNamed(context, '/controls',
+                            arguments: {'toggle': _toggle});
                       },
                       child: Row(
                         children: [

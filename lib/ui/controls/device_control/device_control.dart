@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:smart_light_dashboard/ui/controls/device_control/color_screen.dart';
 
@@ -29,7 +31,18 @@ class _DeviceControlPageState extends State<DeviceControlPage> {
   bool _toggle = true;
 
   @override
+  void initState() {
+    _getLightState();
+    super.initState();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final args = (ModalRoute.of(context)?.settings.arguments ??
+        <String, dynamic>{}) as Map;
+
+    _toggle = args['toggle'];
+
     return SafeArea(
       child: Scaffold(
         backgroundColor: const Color(0xFF1F2128),
@@ -60,8 +73,8 @@ class _DeviceControlPageState extends State<DeviceControlPage> {
                   GestureDetector(
                     onTap: () {
                       setState(() {
-                        final res = _toggleFun();
-                        (res == "Fail") ? print("failed") : _toggle = !_toggle;
+                        _toggleFun();
+                        _toggle = !_toggle;
                       });
                     },
                     child: _toggle
@@ -246,15 +259,14 @@ class _DeviceControlPageState extends State<DeviceControlPage> {
     );
   }
 
-  Future<String> _toggleFun() async {
+  void _toggleFun() async {
     _apiResponseToggle =
         await _httpService.commands(99458501, 'toggle', false, []);
 
     if ((_apiResponseToggle.Data) != null) {
       // Navigator.of(context, rootNavigator: true).pop();
-      return _apiResponseToggle.Data.toString();
     } else {
-      return "Fail";
+      print("Fail");
     }
   }
 
@@ -310,6 +322,25 @@ class _DeviceControlPageState extends State<DeviceControlPage> {
 
     if ((_apiResponseBrightness.Data) != null) {
       // Navigator.of(context, rootNavigator: true).pop();
+    }
+  }
+
+  void _getLightState() async {
+    print("API CALLED helo");
+    _apiResponseState =
+        await _httpService.commands(99458501, 'get_prop', false, ["power"]);
+    if ((_apiResponseState.Data) != null) {
+      final response = jsonEncode(_apiResponseState.Data);
+      if (response.substring(29, 31) == "on") {
+        setState(() {
+          _toggle = true;
+        });
+      } else {
+        _toggle = false;
+      }
+      print(_apiResponseState.Data.toString());
+    } else {
+      print("Not available");
     }
   }
 }
