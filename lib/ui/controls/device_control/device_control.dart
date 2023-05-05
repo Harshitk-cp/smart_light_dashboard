@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:smart_light_dashboard/ui/controls/device_control/color_screen.dart';
-import 'package:smart_light_dashboard/ui/controls/ambient_mode.dart';
 
 import '../../../api/api_response.dart';
 import '../../../api/http_service.dart';
+import 'white_screen.dart';
 
 class DeviceControlPage extends StatefulWidget {
   const DeviceControlPage({super.key});
@@ -16,6 +16,7 @@ class DeviceControlPage extends StatefulWidget {
 
 class _DeviceControlPageState extends State<DeviceControlPage> {
   late ApiResponse _apiResponseBrightness = ApiResponse();
+  late ApiResponse _apiResponseState = ApiResponse();
   final HttpService _httpService = HttpService();
   late ApiResponse _apiResponseToggle = ApiResponse();
   late Color color = Colors.white;
@@ -181,7 +182,7 @@ class _DeviceControlPageState extends State<DeviceControlPage> {
                     child: ColorScreen(),
                   ),
                   Center(
-                    child: AmbientMode(),
+                    child: WhiteScreen(),
                   )
                 ],
               ),

@@ -7,16 +7,16 @@ import 'package:permission_handler/permission_handler.dart';
 import '../../api/api_response.dart';
 import '../../api/http_service.dart';
 
-class AmbientMode extends StatefulWidget {
-  const AmbientMode({super.key});
+class WhiteScreen extends StatefulWidget {
+  const WhiteScreen({super.key});
 
   @override
-  _AmbientModeState createState() {
-    return _AmbientModeState();
+  _WhiteScreenState createState() {
+    return _WhiteScreenState();
   }
 }
 
-class _AmbientModeState extends State<AmbientMode> {
+class _WhiteScreenState extends State<WhiteScreen> {
   late ApiResponse _apiResponseColour = ApiResponse();
   final HttpService _httpService = HttpService();
   String _createMediaProjectionResult = 'Start Mode';
